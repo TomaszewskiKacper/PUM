@@ -81,11 +81,11 @@ fun QuizScreen(questionList: List<String>, answerList: List<List<String>>, corre
                 text = questionList[currentQuestion],
                 textAlign = TextAlign.Center,
                 fontSize = 20.sp,
-                modifier = Modifier.background(Color(222,222,222), RectangleShape).padding(10.dp)
+                modifier = Modifier.background(Color(222,222,222), RectangleShape).padding(10.dp).weight(0.2f)
             )
             Spacer(modifier = Modifier.height(30.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {    //COLUMN WITH RADIO BUTTONS
+            Column(modifier = Modifier.fillMaxWidth().weight(0.5f)) {    //COLUMN WITH RADIO BUTTONS
                 answerList[currentQuestion].forEachIndexed { index, answer ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
