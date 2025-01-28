@@ -1,11 +1,14 @@
 package com.example.lista8
 
+import android.annotation.SuppressLint
+import android.app.Application
 import android.os.Bundle
 import android.widget.Space
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,12 +31,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph
+import androidx.navigation.NavHost
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.lista8.ui.theme.Lista8Theme
+
+sealed class Screens(val route : String){
+    data object AddScreen : Screens("Add")
+    data object GradeScreen : Screens("Grades")
+    data object EditScreen : Screens("Edit")
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,20 +64,62 @@ class MainActivity : ComponentActivity() {
         setContent {
             Lista8Theme {
 
-
+                Main()
             }
         }
     }
 }
+
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun Navigation(vm : MainViewModel){
+    val navController = rememberNavController()
+    Scaffold(
+        content = { NavGraph(navController = navController, vm = vm)}
+    )
+}
+
+@Composable
+fun NavGraph(navController: NavHostController, vm : MainViewModel){
+    NavHost(
+        navController = navController,
+        startDestination = Screens.GradeScreen.route
+    ){
+        composable(route = Screens.GradeScreen.route){ GradeScreen(navController = navController, vm = vm)}
+        composable(route = Screens.AddScreen.route){ AddScreen(navController = navController, vm = vm) }
+        composable(
+            route = "${Screens.EditScreen.route}/{id}",
+            arguments = listOf(navArgument("id") {type = NavType.IntType})
+        ){ backStackEntry ->
+            val gradeID = backStackEntry.arguments?.getInt("id") ?: 0
+            EditScreen(navController = navController, vm = vm, gradeID = gradeID)
+        }
+    }
+
+
+}
+
+
+
+
 @Preview
 @Composable
 fun Main(){
-    GradeScreen()
+    val viewModel : MainViewModel = viewModel(
+        LocalViewModelStoreOwner.current!!,
+        "MainViewModel",
+        MainViewModelFactory(LocalContext.current.applicationContext as Application)
+    )
+
+
+    Navigation(viewModel)
 }
 
 
 @Composable
-fun GradeScreen(){
+fun GradeScreen(navController: NavHostController, vm : MainViewModel){
+    val grades by vm.gradesState.collectAsStateWithLifecycle()
+
     Column (
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start,
@@ -72,8 +136,9 @@ fun GradeScreen(){
             )
         }
         Spacer(Modifier.height(15.dp))
-        LazyColumn {
-
+        LazyColumn { items(grades.size){ grade ->
+            GradeItemScreen(navController = navController, grade = grades[grade])
+        }
         }
 
 
@@ -85,7 +150,7 @@ fun GradeScreen(){
                 .padding(15.dp)
         ){
             Text(
-                text = "średnia Ocen: ",
+                text = "Średnia Ocen: ",
                 fontSize = 25.sp,
                 modifier = Modifier.weight(1F)
             )
@@ -93,31 +158,34 @@ fun GradeScreen(){
             Text("todo", fontSize = 25.sp)
         }
         Spacer(Modifier.height(10.dp))
-        Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Nowy") }
+        Button(onClick = {navController.navigate(Screens.AddScreen.route)}, modifier = Modifier.fillMaxWidth()) { Text("Nowy") }
     }
 }
 
 @Composable
-fun GradeItemScreen(){
+fun GradeItemScreen(navController: NavHostController, grade: Grade){
     Spacer(Modifier.height(10.dp))
     Row (
         Modifier
             .background(Color.Gray)
             .fillMaxWidth()
             .padding(15.dp)
+            .clickable {
+                navController.navigate("${Screens.EditScreen.route}/${grade.id}")
+            }
     ){
         Text(
-            text = "przedmiot: ",
+            text = grade.name,
             fontSize = 25.sp,
             modifier = Modifier.weight(1F)
         )
 
-        Text("ocena", fontSize = 25.sp)
+        Text(grade.grade.toString(), fontSize = 25.sp)
     }
 }
 
 @Composable
-fun EditScreen(){
+fun EditScreen(navController: NavHostController, vm : MainViewModel, gradeID : Int){
     Column (
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start,
@@ -156,7 +224,7 @@ fun EditScreen(){
 }
 
 @Composable
-fun AddScreen(){
+fun AddScreen(navController: NavHostController, vm : MainViewModel){
     Column (
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start,
@@ -201,7 +269,13 @@ fun AddScreen(){
 
         )
         Spacer(Modifier.weight(1F))
-        Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Dodaj") }
+
+        var add = {
+            vm.addGrade(Grade(id = 0, name = nametext.text, grade = gradetext.text.toInt()) )
+            navController.navigate(Screens.GradeScreen.route)
+        }
+
+        Button(onClick = {add}, modifier = Modifier.fillMaxWidth()) { Text("Dodaj") }
     }
 
 

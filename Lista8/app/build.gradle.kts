@@ -2,14 +2,16 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
+
 }
 
 android {
-    namespace = "com.example.lista6"
+    namespace = "com.example.lista8"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.lista6"
+        applicationId = "com.example.lista8"
         minSdk = 30
         targetSdk = 35
         versionCode = 1
@@ -41,9 +43,13 @@ android {
 
 dependencies {
     val nav_version = "2.8.5"
+    val room_version = "2.6.1"
 
 
 
+    implementation(libs.androidx.room.ktx)
+    implementation("androidx.room:room-runtime:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation ("androidx.compose.material3:material3:<latest-version>")
