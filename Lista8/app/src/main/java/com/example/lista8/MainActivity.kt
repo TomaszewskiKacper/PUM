@@ -270,12 +270,10 @@ fun AddScreen(navController: NavHostController, vm : MainViewModel){
         )
         Spacer(Modifier.weight(1F))
 
-        var add = {
-            vm.addGrade(Grade(id = 0, name = nametext.text, grade = gradetext.text.toInt()) )
+        Button(onClick = {
+            vm.addGrade(Grade(id = 0, name = nametext.text, grade = gradetext.text.toInt()))
             navController.navigate(Screens.GradeScreen.route)
-        }
-
-        Button(onClick = {add}, modifier = Modifier.fillMaxWidth()) { Text("Dodaj") }
+                         }, modifier = Modifier.fillMaxWidth()) { Text("Dodaj") }
     }
 
 
