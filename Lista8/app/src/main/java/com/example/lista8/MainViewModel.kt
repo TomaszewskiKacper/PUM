@@ -35,12 +35,19 @@ interface GradeDao{
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(grade : Grade)
 
+    @Query("DELETE FROM grade_table WHERE id = :id")
+    suspend fun delete(id: Int)
+
+    @Query("SELECT AVG(grade) FROM grade_table")
+    fun getAVG(): Flow<Double>
+
     @Update
     suspend fun update(grade : Grade)
 
     @Query("SELECT * FROM grade_table WHERE id = :id")
-    fun getGrade(id : Int) : List<Grade>
-}
+    suspend fun getGrade(id: Int): Grade?}
+
+
 
 @Database(entities = [Grade::class], version = 1, exportSchema = false)
 abstract class GradeDatabase : RoomDatabase() {
@@ -64,7 +71,9 @@ class GradeRepository(private val gradeDao : GradeDao){
     fun getGrades() = gradeDao.getGrades()
     suspend fun updateGrade(grade : Grade) = gradeDao.update(grade)
     suspend fun insertGrade(grade : Grade) = gradeDao.insert(grade)
-    fun getGrade(id : Int) = gradeDao.getGrade(id)
+    suspend fun getGrade(id: Int): Grade? = gradeDao.getGrade(id)
+    suspend fun deleteGrade(id : Int) = gradeDao.delete(id)
+    fun getAVG() = gradeDao.getAVG()
 }
 
 
@@ -75,13 +84,18 @@ class MainViewModelFactory(val application: Application) :
     }
 }
 
-class MainViewModel(application : Application) : ViewModel(){
-    private val repository : GradeRepository
+class MainViewModel(application: Application) : ViewModel() {
+    private val repository: GradeRepository
     private val _gradesState: MutableStateFlow<List<Grade>> = MutableStateFlow(emptyList())
     val gradesState: StateFlow<List<Grade>>
         get() = _gradesState
 
+    private val _selectedGrade: MutableStateFlow<Grade?> = MutableStateFlow(null)
+    val selectedGrade: StateFlow<Grade?>
+        get() = _selectedGrade
 
+    private val _averageGrade: MutableStateFlow<Double> = MutableStateFlow(0.0)
+    val averageGrade: StateFlow<Double> get() = _averageGrade
 
     init {
         val db = GradeDatabase.getDatabase(application)
@@ -89,34 +103,49 @@ class MainViewModel(application : Application) : ViewModel(){
         repository = GradeRepository(dao)
 
         fetchGrades()
+        fetchAverageGrade()
     }
 
-    private fun fetchGrades(){
+    private fun fetchGrades() {
         viewModelScope.launch {
-            repository.getGrades().collect{
-                grades ->
+            repository.getGrades().collect { grades ->
                 _gradesState.value = grades
             }
         }
     }
 
-    fun addGrade(grade : Grade){
+    private fun fetchAverageGrade() {
+        viewModelScope.launch {
+            repository.getAVG().collect { avg ->
+                _averageGrade.value = avg
+            }
+        }
+    }
+
+    fun addGrade(grade: Grade) {
         viewModelScope.launch {
             repository.insertGrade(grade)
         }
     }
+    fun clearSelectedGrade() {
+        _selectedGrade.value = null
+    }
 
-    fun updateGrade(grade : Grade){
+    fun updateGrade(grade: Grade) {
         viewModelScope.launch {
             repository.updateGrade(grade)
         }
     }
 
-    fun getGrade(id : Int){
+    fun deleteGrade(id: Int){
         viewModelScope.launch {
-            repository.getGrade(id)
+            repository.deleteGrade(id)
         }
     }
 
-
+    fun getGrade(id: Int) {
+        viewModelScope.launch {
+            _selectedGrade.value = repository.getGrade(id)
+        }
+    }
 }

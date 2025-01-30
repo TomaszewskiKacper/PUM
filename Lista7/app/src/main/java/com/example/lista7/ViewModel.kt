@@ -39,7 +39,7 @@ class MainViewModel : ViewModel(){
     init {
         for (i in 1..100){
             val s = Student(
-                index = Random.nextInt(100_000, 399_999),
+                index = Random.nextInt(300_000, 399_999),
                 firstName = names[Random.nextInt(0, names.size)],
                 surname = surnames[Random.nextInt(0, surnames.size)],
                 year = Random.nextInt(2010, 2025),

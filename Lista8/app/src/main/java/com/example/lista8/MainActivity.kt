@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.lista8.ui.theme.Lista8Theme
+import kotlin.math.round
 
 sealed class Screens(val route : String){
     data object AddScreen : Screens("Add")
@@ -119,6 +121,7 @@ fun Main(){
 @Composable
 fun GradeScreen(navController: NavHostController, vm : MainViewModel){
     val grades by vm.gradesState.collectAsStateWithLifecycle()
+    val averageGrade by vm.averageGrade.collectAsStateWithLifecycle()
 
     Column (
         verticalArrangement = Arrangement.Top,
@@ -155,7 +158,7 @@ fun GradeScreen(navController: NavHostController, vm : MainViewModel){
                 modifier = Modifier.weight(1F)
             )
 
-            Text("todo", fontSize = 25.sp)
+            Text((round(averageGrade*100)/100).toString(), fontSize = 25.sp)
         }
         Spacer(Modifier.height(10.dp))
         Button(onClick = {navController.navigate(Screens.AddScreen.route)}, modifier = Modifier.fillMaxWidth()) { Text("Nowy") }
@@ -184,44 +187,141 @@ fun GradeItemScreen(navController: NavHostController, grade: Grade){
     }
 }
 
+//@Composable
+//fun EditScreen(navController: NavHostController, vm : MainViewModel, gradeID : Int){
+//    vm.getGrade(gradeID)
+//
+//    Column (
+//        verticalArrangement = Arrangement.Top,
+//        horizontalAlignment = Alignment.Start,
+//        modifier = Modifier
+//            .background(Color.LightGray)
+//            .fillMaxSize()
+//            .padding(15.dp)
+//    ){
+//        Row (horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()){
+//            Text(
+//                text = "Edytuj",
+//                fontSize = 45.sp,
+//                fontWeight = FontWeight.Bold
+//            )
+//        }
+//        val grade by vm.selectedGrade.collectAsStateWithLifecycle()
+//
+//        var nametext by remember { mutableStateOf(TextFieldValue(grade!!.name)) }
+//
+//        Spacer(Modifier.height(20.dp))
+//        TextField(
+//            value = nametext,
+//            onValueChange = {newText -> nametext = newText},
+//            modifier = Modifier.fillMaxWidth()
+//
+//        )
+//        var gradetext by remember { mutableStateOf(TextFieldValue(grade!!.grade.toString())) }
+//        Spacer(Modifier.height(20.dp))
+//        TextField(
+//            value = gradetext,
+//            onValueChange = {newText -> gradetext = newText},
+//            modifier = Modifier.fillMaxWidth()
+//
+//        )
+//        Spacer(Modifier.weight(1F))
+//        Button(onClick = {
+//            var new_grade = Grade(grade!!.id, nametext.toString(), gradetext.toString().toInt())
+//            vm.updateGrade(new_grade)
+//            navController.navigate(Screens.GradeScreen.route)
+//        }, modifier = Modifier.fillMaxWidth()) { Text("Update") }
+//
+//        Button(onClick = {
+//            vm.deleteGrade(gradeID)
+//            navController.navigate(Screens.GradeScreen.route)
+//        }, modifier = Modifier.fillMaxWidth()) { Text("Usuń") }
+//    }
+//}
+
 @Composable
-fun EditScreen(navController: NavHostController, vm : MainViewModel, gradeID : Int){
-    Column (
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start,
-        modifier = Modifier
-            .background(Color.LightGray)
-            .fillMaxSize()
-            .padding(15.dp)
-    ){
-        Row (horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()){
-            Text(
-                text = "Edytuj",
-                fontSize = 45.sp,
-                fontWeight = FontWeight.Bold
-            )
+fun EditScreen(navController: NavHostController, vm: MainViewModel, gradeID: Int) {
+    vm.getGrade(gradeID) // Fetch grade .
+
+    DisposableEffect(Unit) {
+        onDispose {
+            vm.clearSelectedGrade()
         }
+    }
 
-        var nametext by remember { mutableStateOf(TextFieldValue("")) }
-        Spacer(Modifier.height(20.dp))
-        TextField(
-            value = nametext,
-            onValueChange = {newText -> nametext = newText},
-            modifier = Modifier.fillMaxWidth()
 
-        )
-        var gradetext by remember { mutableStateOf(TextFieldValue("")) }
-        Spacer(Modifier.height(20.dp))
-        TextField(
-            value = gradetext,
-            onValueChange = {newText -> gradetext = newText},
-            modifier = Modifier.fillMaxWidth()
+    val grade by vm.selectedGrade.collectAsStateWithLifecycle()
 
-        )
-        Spacer(Modifier.weight(1F))
-        Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Usuń") }
+    // Check if the grade is loaded
+    if (grade == null) {
+        // Display a loading indicator or placeholder
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .background(Color.LightGray)
+                .fillMaxSize()
+        ) {
+            Text(text = "Loading...", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        }
+    } else {
+        // When the grade is loaded, display the edit screen
+        var nametext by remember { mutableStateOf(TextFieldValue(grade!!.name)) }
+        var gradetext by remember { mutableStateOf(TextFieldValue(grade!!.grade.toString())) }
+
+        Column(
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier
+                .background(Color.LightGray)
+                .fillMaxSize()
+                .padding(15.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Edytuj",
+                    fontSize = 45.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+            TextField(
+                value = nametext,
+                onValueChange = { newText -> nametext = newText },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(20.dp))
+            TextField(
+                value = gradetext,
+                onValueChange = { newText -> gradetext = newText },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.weight(1F))
+            Button(
+                onClick = {
+                    val newGrade = Grade(grade!!.id, nametext.text, gradetext.text.toInt())
+                    vm.updateGrade(newGrade)
+                    navController.navigate(Screens.GradeScreen.route)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Update")
+            }
+
+            Button(
+                onClick = {
+                    vm.deleteGrade(gradeID)
+                    navController.navigate(Screens.GradeScreen.route)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Usuń")
+            }
+        }
     }
 }
+
 
 @Composable
 fun AddScreen(navController: NavHostController, vm : MainViewModel){

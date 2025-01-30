@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lista6"
+    namespace = "com.example.lista7"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.lista6"
+        applicationId = "com.example.lista7"
         minSdk = 30
         targetSdk = 35
         versionCode = 1
