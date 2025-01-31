@@ -33,7 +33,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -88,6 +90,7 @@ sealed class Screens(val route : String){
     data object TagScreen : Screens("tag")
     data object TagListScreen : Screens("tagList")
     data object AddImageScreen : Screens("imageAdd")
+    data object CommentScreen : Screens("comments")
 }
 
 
@@ -133,6 +136,14 @@ class ScreenManager() {
                 ImageScreen(vm = vm, NavController = navController, id = imageId)
             }
 
+            composable(route = "${Screens.CommentScreen.route}/{id}",
+                arguments = listOf(navArgument("id"){type = NavType.IntType})
+            ){
+                    backStackEntry ->
+                val imageId = backStackEntry.arguments?.getInt("id") ?: 0
+                CommentScreen(vm = vm, navController = navController, ImageId = imageId)
+            }
+
         }
 
 
@@ -141,6 +152,102 @@ class ScreenManager() {
 
     // SCREENS
     //___________________________________________________________
+
+    @Composable
+    fun CommentScreen(vm : MyViewModel, navController: NavHostController, ImageId : Int){
+    var comment by remember { mutableStateOf("") }
+
+    Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Gray)
+        ) {
+        Spacer(Modifier.height(16.dp))
+
+        // Main Container
+        Row(
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            // Image Path text field
+            TextField(
+                value = comment,
+                onValueChange = { newValue -> comment = newValue },
+                label = { Text("Add Comment:") },
+                shape = RoundedCornerShape(16.dp),
+                maxLines = 1,
+                modifier = Modifier
+                    .weight(1F)
+                    .clip(RoundedCornerShape(20.dp))
+                    .padding(6.dp)
+            )
+
+            //Browse files button
+            Button(
+                onClick = {
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val id = vm.addComment(Comment(0, comment, 1))
+
+                        //insert tags after getting id
+                        vm.addCommentToImage(
+                            ImageComments(
+                                imageId = ImageId,
+                                commentId = id.toInt()
+                            )
+                        )
+
+                        comment = ""
+                    }
+                },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .background(Color.Transparent)
+
+
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Create,
+                    tint = Color.White,
+                    contentDescription = "comment",
+                    modifier = Modifier.size(40.dp)
+
+                )
+            }
+        }
+        // LAZY COLUMN TO SHOW ALL COMMENTS
+        vm.fetchCommentsForImage(ImageId)
+        val comments by vm.imageComments.collectAsStateWithLifecycle()
+
+        LazyColumn (horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()
+        ){
+            items(comments.size){ index ->
+                Row (
+                    modifier = Modifier.fillMaxWidth()
+                ){
+                    Box(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .background(Color.LightGray, shape = RoundedCornerShape(20.dp))
+                            .border(1.dp, Color.Black, shape = RoundedCornerShape(20.dp))
+                            .clip(shape = RoundedCornerShape(20.dp))
+                    ){
+                        Text(
+                            text = comments[index].text,
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+
+                }
+
+            }}
+    }
+    }
 
     @Composable
     fun GalleryScreen(vm : MyViewModel, navController: NavHostController){
@@ -473,6 +580,22 @@ class ScreenManager() {
 
                     }
 
+                }
+                // Go to comments
+                FloatingActionButton(
+                    onClick = { NavController.navigate("${Screens.CommentScreen.route}/${image!!.id}") },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(56.dp),  // Set size of the button
+                    containerColor = Color.DarkGray,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MailOutline,
+                        tint = Color.White,
+                        contentDescription = "comments",
+                        modifier = Modifier.size(40.dp)
+                    )
                 }
 
             }
