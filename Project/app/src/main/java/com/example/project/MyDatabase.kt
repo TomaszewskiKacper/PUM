@@ -90,16 +90,13 @@ interface ImageDao{
     // QUERIES
     @Query("""
     SELECT i.* FROM image_table i
-    LEFT JOIN image_tags_table it ON i.id = it.imageId
-    LEFT JOIN tag_table t ON it.tagId = t.id
-    WHERE LOWER(i.name) LIKE '%' || LOWER(:searchQuery) || '%'
-       OR (t.name IN (:tags) AND (SELECT COUNT(DISTINCT t2.id)
-                                  FROM image_tags_table it2
-                                  JOIN tag_table t2 ON it2.tagId = t2.id
-                                  WHERE it2.imageId = i.id) = :tagCount)
+    JOIN image_tags_table it ON i.id = it.imageId
+    JOIN tag_table t ON it.tagId = t.id
+    WHERE t.name IN (:tags)
     GROUP BY i.id
+    HAVING COUNT(DISTINCT t.id) = :tagCount
     """)
-    fun getImagesByTags(tags: List<String>, tagCount: Int, searchQuery: String): Flow<List<Image>>
+    fun getImagesByTags(tags: List<String>, tagCount: Int): Flow<List<Image>>
 
     @Query("SELECT * FROM image_table")
     fun getAllImages() : Flow<List<Image>>

@@ -81,7 +81,7 @@ class MyViewModel(application: Application) : ViewModel() {
     private fun fetchSearchImages(query: String) {
         viewModelScope.launch {
             val tags = query.split(" ").filter { it.isNotBlank() }
-            repository.getImagesByTags(tags, tags.size, query).collect { images ->
+            repository.getImagesByTags(tags, tags.size).collect { images ->
                 _imageSearchState.value = images
             }
         }

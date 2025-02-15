@@ -5,7 +5,7 @@ package com.example.project
 class ImageRepository(private val imgDao : ImageDao) {
 
     // Image Queries
-    fun getImagesByTags(tags: List<String>, tagCount: Int, searchQuery: String) = imgDao.getImagesByTags(tags, tagCount, searchQuery)
+    fun getImagesByTags(tags: List<String>, tagCount: Int) = imgDao.getImagesByTags(tags, tagCount)
     fun getAllImages() = imgDao.getAllImages()
     suspend fun getImage(id:Int): Image? = imgDao.getImage(id)
 
